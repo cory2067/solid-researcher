@@ -1,4 +1,5 @@
 *.key
 *.pem
 *.swp
+*.seal
 node_modules
