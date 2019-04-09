@@ -104,6 +104,11 @@ const run = async () => {
   };
   const aggRes = await request(aggReq);
 
+  if (!aggRes.numerator) {
+    console.log(chalk.red("Insufficient data to compute aggregate."));
+    return;
+  }
+  
   console.log(chalk.green("Done! Now downloading/decrypting result"));
 
   // Download numerator value
@@ -112,7 +117,7 @@ const run = async () => {
     encoding: null,
   })
   fs.writeFileSync('numerator.seal', numData);
-  
+
   const numPlain = decrypt('numerator.seal');
   
   let denPlain = 1;
