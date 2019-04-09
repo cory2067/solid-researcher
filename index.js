@@ -93,22 +93,40 @@ const run = async () => {
     return console.log(chalk.bold.red("Invalid study index"));
   }
 
-  const req = {
+  // Submit the aggregation request
+  const aggReq = {
     uri: AGG_URI + "/api/aggregate", 
-    encoding: null,
+    //encoding: null,
     qs: {
       study: studies[choice]._id
-    }
+    },
+    json: true
   };
+  const aggRes = await request(aggReq);
 
-  console.log(chalk.gray("Aggregating..."));
-  const valueData = await request(req)
-  await fs.writeFileSync('value.seal', valueData);
+  console.log(chalk.green("Done! Now downloading/decrypting result"));
 
-  console.log(chalk.green("Done! Now decrypting..."));
+  // Download numerator value
+  const numData = await request({
+    uri: AGG_URI + aggRes.numerator, 
+    encoding: null,
+  })
+  fs.writeFileSync('numerator.seal', numData);
+  
+  const numPlain = decrypt('numerator.seal');
+  
+  let denPlain = 1;
+  if (aggRes.denominator) {
+    // Dpwnload denominator value
+    const denData = await request({
+      uri: AGG_URI + aggRes.denominator, 
+      encoding: null,
+    })
+    fs.writeFileSync('denominator.seal', denData);
+    denPlain = decrypt('denominator.seal');
+  }
 
-  const value = decrypt('value.seal');
-  console.log(chalk.green("Result: " + chalk.bold(value)));
+  console.log(chalk.green("Result: " + chalk.bold(numPlain/denPlain)));
 };
 
 run();
