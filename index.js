@@ -5,7 +5,7 @@ const request = require("request-promise-native");
 const seal = require('./sealjs');
 const fs = require('fs');
 
-const AGG_URI = "http://localhost:5000";
+const AGG_URI = "https://solid-aggregator.xyz";
 
 const promptWebId = () => {
   const questions = [
@@ -23,6 +23,7 @@ const promptChoose = () => {
   return inquirer.prompt(questions);
 };
 
+// --keygen
 const keygen = async () => {
   console.log("Generating public/secret keys...");
 
@@ -38,6 +39,33 @@ const keygen = async () => {
   sk.save('secret.key');
 
   console.log(chalk.bold.green("Saved keys to this directory"));
+};
+
+// --submit FILE
+const submit = async () => {
+  const studyPath = process.argv[process.argv.length - 1];
+
+  if (studyPath === '--submit') {
+    return console.log(chalk.bold.red("Expected a file, aborting."));
+  }
+  
+  console.log(chalk.gray("Reading file: " + studyPath));
+  const study = JSON.parse(fs.readFileSync(studyPath));
+  study.aggKey = AGG_URI + "/static/public.pem";
+  
+  const req = {
+    method: "POST",
+    uri: AGG_URI + "/api/study", 
+    body: study,
+    json: true,
+  };
+
+  try {
+    await request(req);
+    console.log(chalk.bold.green("Submitted study!"));
+  } catch (e) {
+    console.log(chalk.bold.red("Failed to submit study"));
+  }
 };
 
 const decrypt = (path) => {
@@ -62,6 +90,11 @@ const run = async () => {
   // if the "--keygen" flag was given, generate a key pair
   if (process.argv.includes('--keygen')) {
     return keygen();
+  }
+  
+  // if the "--submit" flag was given, submit a study
+  if (process.argv.includes('--submit')) {
+    return submit();
   }
 
   // otherwise, aggregate
@@ -96,7 +129,6 @@ const run = async () => {
   // Submit the aggregation request
   const aggReq = {
     uri: AGG_URI + "/api/aggregate", 
-    //encoding: null,
     qs: {
       study: studies[choice]._id
     },
@@ -114,7 +146,7 @@ const run = async () => {
   // Download numerator value
   const numData = await request({
     uri: AGG_URI + aggRes.numerator, 
-    encoding: null,
+    encoding: null, // deal with weird binary data
   })
   fs.writeFileSync('numerator.seal', numData);
 
