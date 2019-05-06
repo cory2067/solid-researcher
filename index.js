@@ -162,6 +162,11 @@ const run = async () => {
     fs.writeFileSync('denominator.seal', denData);
     denPlain = decrypt('denominator.seal');
   }
+  
+  if (denPlain === 0) { // e.g. no data passed the filter
+    console.log(chalk.red("Insufficient data to compute aggregate."));
+    return;
+  }
 
   console.log(chalk.green("Result: " + chalk.bold(numPlain/denPlain)));
 };
